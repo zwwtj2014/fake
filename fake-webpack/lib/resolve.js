@@ -9,8 +9,6 @@
 
 const path = require("path");
 const fs = require("fs");
-const util = require("util");
-const stat = util.promisify(fs.stat);
 
 /**
  * context: absolute filename of current file
@@ -34,15 +32,26 @@ module.exports = function resolve(context, identifier, options, callback) {
         options.paths = [];
     }
 
-    function finalResult(err, absoluteFileName) {}
+    function finalResult(err, absoluteFileName) {
+        if (err) {
+            callback('Module "' + identifier + '" not found in context "' + context + '"');
+            return;
+        }
+        callback(null, absoluteFileName);
+    }
 
     let identArray = identifier.split("/");
     let contextArray = split(context);
 
     if (identArray[0] === "." || identArray[0] === ".." || identArray[0] === "") {
         let pathname = join(contextArray, identArray);
+        loadAsFile(pathname, options, (err, absoluteFilename) => {
+            if (err) {
+                loadAsDirectory(pathname, options, finalResult);
+            }
+        });
     } else {
-        loadNodeModules(contextArray, identArray, options, finalResult);
+        loadNodeModules(contextArray, identArray, options, finalResult, finalResult);
     }
 };
 
@@ -57,64 +66,76 @@ function join(a, b) {
 /**
  * 相对路径时：查找引用的路径是否为一个文件路径
  */
-async function loadAsFile(fileName, options) {
+function loadAsFile(fileName, options, callback) {
     let pos = -1,
         result;
 
-    let stats = await stat((result = fileName));
-    while (!stats || !stats.isFile()) {
-        pos++;
-        if (pos >= options.extensions.length) {
+    fs.stat((result = fileName), function tryCb(err, stats) {
+        if (err || !stats || !stats.isFile()) {
+            pos++;
+            if (pos >= options.extensions.length) {
+                callback(err);
+                return;
+            }
+            fs.stat((result = `${fileName}${options.extensions[pos]}`), tryCb);
             return;
         }
-        stats = stat((result = `${fileName}${options.extensions[pos]}`));
-    }
-
-    return result;
+        callback(null, result);
+    });
 }
 
 /**
  * 相对路径：查找引用的路径时一个文件夹时
  */
-async function loadAsDirectory(dirname, options) {
+function loadAsDirectory(dirname, options, callback) {
     const packageJsonFile = join(split(dirname), ["package.json"]);
-    const stats = await stat(packageJsonFile);
-    if (stats.isFile()) {
+    fs.stat(packageJsonFile, (err, stats) => {
         let mainModule = "index";
-        const readFile = util.promisify(fs.readFile);
-        const content = await readFile(packageJsonFile, "utf-8");
-        content = JSON.parse(content);
-        if (content.main) {
-            mainModule = content.main; // 从这可以看出来最初始的时候webpack是根据main来找模块的
+        if (!err && stats.isFile()) {
+            fs.readFile(packageJsonFile, "utf-8", (err, content) => {
+                if (err) {
+                    throw new Error("read file " + packageJsonFile + " error: " + err);
+                }
+                content = JSON.parse(content);
+                if (content.main) {
+                    mainModule = content.main; // 从这可以看出来最初始的时候webpack是根据main来找模块的
+                }
+                loadAsFile(join(split(dirname), [mainModule]), options, callback);
+            });
+        } else {
+            loadAsFile(join(split(dirname), [mainModule]), options, callback);
         }
-    }
-    return loadAsFile(join(split(dirname), [mainModule]), options);
+    });
 }
 
 /**
  *
  */
-async function loadNodeModules(context, identifier, options) {
-    let dirs = nodeModeulePaths(context, options);
-    function tryDir(dir) {
-        let pathName = join(split(dir), identifier);
-        let absoluteFilename = await loadAsFile(pathName, options);
-        if(!absoluteFilename){
-            absoluteFilename = loadAsDirectory(pathName,options);
-            if(!absoluteFilename){
-                if(dirs.length === 0){
-                    return null;
+function loadNodeModules(contextArray, identifierArray, options, callback) {
+    nodeModeulePaths(context, options, (err, dirs) => {
+        function tryDir(dir) {
+            let pathName = join(split(dir), identifier);
+            loadAsFile(pathName, options, (err, absoluteFilename) => {
+                if (err) {
+                    loadAsDirectory(pathName, options, (err, absoluteFilename) => {
+                        if (err) {
+                            if (dirs.length === 0) {
+                                callback(true);
+                                return;
+                            }
+                            tryDir(dirs.shift());
+                            return;
+                        }
+                    });
                 }
-                tryDir(dirs.shift());
-                return;
-            }
+                callback(null,absoluteFilename);
+            });
         }
-        return absoluteFilename;
-    }
-    tryDir(dirs.shift());
+        tryDir(dirs.shift());
+    });
 }
 
-function nodeModeulePaths(context, options) {
+function nodeModeulePaths(contextArray, options, callback) {
     let parts = context;
     let rootNodeModules = parts.indexOf("node_modules");
 
@@ -127,5 +148,5 @@ function nodeModeulePaths(context, options) {
         let part = parts.slice(0, i);
         dirs.push(join(part, ["node_modules"]));
     }
-    return dirs;
+    callback(null, dirs);
 }
