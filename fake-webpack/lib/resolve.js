@@ -45,12 +45,15 @@ module.exports = function resolve(context, identifier, options, callback) {
 
     if (identArray[0] === "." || identArray[0] === ".." || identArray[0] === "") {
         let pathname = join(contextArray, identArray);
+        // 1. 先查是否存在fileName这个文件. 否则转到2
         loadAsFile(pathname, options, (err, absoluteFilename) => {
             if (err) {
+                // 再查找fileName可能为文件夹是否存在
                 loadAsDirectory(pathname, options, finalResult);
             }
         });
     } else {
+        // 
         loadNodeModules(contextArray, identArray, options, finalResult, finalResult);
     }
 };
@@ -64,7 +67,9 @@ function join(a, b) {
 }
 
 /**
- * 相对路径时：查找引用的路径是否为一个文件路径
+ * 查找引用的路径是否为一个文件路径
+ * => 1. 首先查找 fiileName 是否存在, 否则转到2
+ *    2. 查找`${fileName}${extensions} 拼接后的文件存不存在`
  */
 function loadAsFile(fileName, options, callback) {
     let pos = -1,
@@ -85,7 +90,10 @@ function loadAsFile(fileName, options, callback) {
 }
 
 /**
- * 相对路径：查找引用的路径时一个文件夹时
+ * 查找引用的路径时一个文件夹时:
+ * => 1. 查找是否存在package.json, 有转到2, 没有转到3
+ *    2. 解析package.json中的main字段, 拼接目录
+ *    3. 使用index拼接目录
  */
 function loadAsDirectory(dirname, options, callback) {
     const packageJsonFile = join(split(dirname), ["package.json"]);
@@ -109,12 +117,12 @@ function loadAsDirectory(dirname, options, callback) {
 }
 
 /**
- *
+ * 从当前目录逐层往上查找package.json
  */
 function loadNodeModules(contextArray, identifierArray, options, callback) {
-    nodeModeulePaths(context, options, (err, dirs) => {
+    nodeModeulePaths(contextArray, options, (err, dirs) => {
         function tryDir(dir) {
-            let pathName = join(split(dir), identifier);
+            let pathName = join(split(dir), identifierArray);
             loadAsFile(pathName, options, (err, absoluteFilename) => {
                 if (err) {
                     loadAsDirectory(pathName, options, (err, absoluteFilename) => {
@@ -128,7 +136,7 @@ function loadNodeModules(contextArray, identifierArray, options, callback) {
                         }
                     });
                 }
-                callback(null,absoluteFilename);
+                callback(null, absoluteFilename);
             });
         }
         tryDir(dirs.shift());
@@ -136,7 +144,7 @@ function loadNodeModules(contextArray, identifierArray, options, callback) {
 }
 
 function nodeModeulePaths(contextArray, options, callback) {
-    let parts = context;
+    let parts = contextArray;
     let rootNodeModules = parts.indexOf("node_modules");
 
     let root = rootNodeModules - 1;

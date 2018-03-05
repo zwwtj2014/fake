@@ -3,7 +3,7 @@
  */
 
 const esprima = require("esprima");
-module.exports = function parser(source, options) {
+module.exports = function parse(source, options) {
     const ast = esprima.parse(source, {
         range: true,
         loc: true
@@ -153,6 +153,7 @@ function walkExpression(context, expression) {
                 walkExpressions(context, expression.arguments);
             }
             break;
+        case "CallExpression":
             if (
                 expression.callee &&
                 expression.arguments &&
