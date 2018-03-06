@@ -1,6 +1,8 @@
 class Tapable {
-    _plugins = {};
-    _currentPluginApply; // 当插件出现多层applyplugin时, 记录上一层的位置, 方便还原现场
+    constructor() {
+        this._plugins = {};
+        this._currentPluginApply = -1; // 当插件出现多层applyplugin时, 记录上一层的位置, 方便还原现场
+    }
 
     // 使用混入而不是继承的方式扩展 Tapable 的原型
     static mixin(pt) {
@@ -13,6 +15,13 @@ class Tapable {
     plugin(name, fn) {
         this._plugins[name] = this._plugins[name] || [];
         this._plugins[name].push(fn);
+    }
+
+    // 增加一个运行多个函数的方式
+    apply() {
+        for (let i = 0; i < arguments.length; i++) {
+            arguments[i].apply(this);
+        }
     }
 
     // 顺序的执行插件name对应的处理函数, 从第二个入数开始为处理函数的参数
@@ -80,7 +89,7 @@ class Tapable {
      * @param {*} callback (err,result)=>{ }
      */
     applyPluginsAsyncWaterfall(name, init, callback) {
-        if (!this._plugins[name] || this._plugins.length === 0) {
+        if (!this._plugins[name] || this._plugins[name].length === 0) {
             return callback(null, init);
         }
         let plugins = this._plugins[name];
@@ -99,6 +108,68 @@ class Tapable {
             plugins[this._currentPluginApply].call(this, result, next);
         };
         plugins[0].call(this, init, next);
+    }
+
+    // 并行执行插件
+    applyPluginsParallel(name) {
+        let args = Array.prototype.slice(arguments, 1);
+        let callback = args.pop();
+        if (!this._plugins[name] && this._plugins[name].length === 0) {
+            return callback();
+        }
+
+        let plugins = this._plugins[name];
+        let remaining = plugins.length; // 用于记录当前有多少个需要并行执行的插件, 控制全部执行完的时机
+        // 加入一个判断是否执行完的逻辑作为每个插件的callback
+        args.push(err => {
+            if (remaining < 0) {
+                return; //边界值
+            }
+            if (err) {
+                return callback(err);
+            }
+            remaining--;
+            // 都执行完了再执行callback
+            if (remaining == 0) {
+                return callback();
+            }
+        });
+        for (let i = 0; i < plugins.length; i++) {
+            plugins[i].apply(this, args);
+        }
+    }
+
+    applyPluginsParallelBailResult(name) {
+        let args = Array.prototype.slice.call(arguments, 1);
+        let callback = args.pop();
+        if (!this._plugins[name] || this._plugins[name].length === 0) {
+            return callback();
+        }
+        let plugins = this._plugins[name];
+        let currentPos = plugins.length;
+        let currentError, currentResult;
+        let done = [];
+        for (let i = 0; i < plugins.length; i++) {
+            args[args.length - 1] = (function(i) {
+                return function(err, result) {
+                    if (i >= currentPos) return; // ignore
+                    done.push(i);
+                    if (err || result) {
+                        currentPos = i + 1;
+                        done = done.filter(function(item) {
+                            return item <= i;
+                        });
+                        currentError = err;
+                        currentResult = result;
+                    }
+                    if (done.length == currentPos) {
+                        callback(currentError, currentResult);
+                        currentPos = 0;
+                    }
+                };
+            })(i);
+            plugins[i].apply(this, args);
+        }
     }
 
     restartApplyPlugins() {
