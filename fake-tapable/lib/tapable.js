@@ -89,6 +89,28 @@ class Tapable {
         plugins[0].apply(this, args);
     }
 
+    applyPluginsAsyncSeriesBailResult(name) {
+        let args = Array.prototype.slice.call(arguments, 1);
+        let callback = args.pop();
+        if (!this._plugins[name] || this._plugins[name].length === 0) {
+            return callback(); // 未找到处理函数则直接执行cb
+        }
+
+        let plugins = this._plugins[name];
+        let i = 0;
+        args.push(
+            copyProperties(callback, () => {
+                if (arguments.length > 0) return callback.apply(null, arguments);
+                i++;
+                if (i >= plugins.length) {
+                    return callback();
+                }
+                plugins[i].apply(this, args);
+            })
+        );
+        plugins[0].apply(this, args);
+    }
+
     applyPluginsWaterfall(name, init) {
         if (!this._plugins[name]) {
             return init;
@@ -168,24 +190,23 @@ class Tapable {
         }
         let plugins = this._plugins[name];
         let currentPos = plugins.length;
-        let currentError, currentResult;
+        let currentResult;
         let done = [];
         var self = this;
         for (let i = 0; i < plugins.length; i++) {
             args[args.length - 1] = (function(i) {
-                return self._copyProperties(callback, function(err, result) {
+                return self._copyProperties(callback, function() {
                     if (i >= currentPos) return; // ignore
                     done.push(i);
-                    if (err || result) {
+                    if (arguments.length > 0) {
                         currentPos = i + 1;
                         done = done.filter(function(item) {
                             return item <= i;
                         });
-                        currentError = err;
-                        currentResult = result;
+                        currentResult = Array.prototype.slice.call(arguments);
                     }
                     if (done.length == currentPos) {
-                        callback(currentError, currentResult);
+                        callback.apply(null, currentResult);
                         currentPos = 0;
                     }
                 });
