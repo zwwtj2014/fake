@@ -129,6 +129,9 @@ class Tapable {
             return callback(); // 未找到处理函数则直接执行cb
         }
         let plugins = this._plugins[name];
+        if (!plugins || plugins.length === 0) {
+            return callback();
+        }
         let i = 0;
         let innerCallback = this._copyProperties(callback, (err, result) => {
             if (arguments.length > 0) return callback.apply(err, result);
@@ -150,6 +153,18 @@ class Tapable {
         let current = init;
         for (let i = 0; i < plugins.length; i++) {
             current = plugins[i].apply(this, [current].concat(args));
+        }
+        return current;
+    }
+
+    applyPluginsWaterfall0(name, init) {
+        let plugins = this._plugins[name];
+        if (!plugins) {
+            return init;
+        }
+        let current = init;
+        for (let i = 0; i < plugins.length; i++) {
+            current = plugins[i].call(this, current);
         }
         return current;
     }
@@ -246,8 +261,10 @@ class Tapable {
     }
 
     applyPluginsParallelBailResult1(name, param, callback) {
-        if (!this._plugins[name] || this._plugins[name].length === 0) return callback();
         var plugins = this._plugins[name];
+        if (!plugins || plugins.length === 0) {
+            return callback();
+        }
         var currentPos = plugins.length;
         var currentResult;
         var done = [];
