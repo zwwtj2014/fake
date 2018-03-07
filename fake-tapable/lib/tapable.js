@@ -46,6 +46,36 @@ class Tapable {
         }
     }
 
+    applyPlugins0(name) {
+        let plugins = this._plugins[name];
+        if (!plugins) {
+            return;
+        }
+        for (let i = 0; i < plugins.length; i++) {
+            plugins[i].apply(this);
+        }
+    }
+
+    applyPlugins1(name, param) {
+        let plugins = this._plugins[name];
+        if (!plugins) {
+            return;
+        }
+        for (let i = 0; i < plugins.length; i++) {
+            plugins[i].call(this, param);
+        }
+    }
+
+    applyPlugins2(name, param1, param2) {
+        let plugins = this._plugins[name];
+        if (!plugins) {
+            return;
+        }
+        for (let i = 0; i < plugins.length; i++) {
+            plugins[i].call(this, param1, param2);
+        }
+    }
+
     // 执行插件name的处理函数。返回第一个执行不为undefined的值, 且终止事件流
     applyPluginsBailResult(name) {
         if (!this._plugins[name]) {
@@ -87,12 +117,12 @@ class Tapable {
         let i = 0;
         // 增加一个next方法作为最后一个参数 => 串联事件流
         args.push(
-            _copyProperties(callback, err => {
+            this._copyProperties(callback, err => {
                 if (err) {
                     callback(err);
                 }
                 i++;
-                if (i >= this._plugins.length) {
+                if (i >= plugins.length) {
                     return callback();
                 }
                 plugins[i].apply(this, args);
@@ -102,14 +132,29 @@ class Tapable {
         plugins[0].apply(this, args);
     }
 
+    applyPluginsAsyncSeries1(name, param, callback) {
+        let plugins = this._plugins[name];
+        if (!plugins || plugins.length === 0) return callback();
+
+        let i = 0;
+        let innerCallback = this._copyProperties(callback, err => {
+            if (err) {
+                callback(err);
+            }
+            i++;
+            if (i >= plugins.length) {
+                return callback();
+            }
+            plugins[i].call(this, param, innerCallback);
+        });
+        plugins[0].call(this, param, innerCallback);
+    }
+
     applyPluginsAsyncSeriesBailResult(name) {
         let args = Array.prototype.slice.call(arguments, 1);
         let callback = args.pop();
-        if (!this._plugins[name] || this._plugins[name].length === 0) {
-            return callback(); // 未找到处理函数则直接执行cb
-        }
-
         let plugins = this._plugins[name];
+        if (!plugins || plugins.length === 0) return callback();
         let i = 0;
         args.push(
             this._copyProperties(callback, () => {
