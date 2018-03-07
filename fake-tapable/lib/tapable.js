@@ -92,6 +92,21 @@ class Tapable {
         plugins[0].apply(this, args);
     }
 
+    applyPluginsWaterfall(name, init) {
+        if (!this._plugins[name]) {
+            return;
+        }
+        let args = Array.prototype.slice(arguments, 2);
+        let plugins = this._plugins[name];
+        let old = this._currentPluginApply;
+        let current = init;
+        for (this._currentPluginApply = 0; this._currentPluginApply < plugins.length; this._currentPluginApply++) {
+            current = plugins[this._currentPluginApply].apply(this, [current].concat(args));
+        }
+        this._currentPluginApply = old;
+        return current;
+    }
+
     /**
      * 插件一个一个的执行, 下一个接收上一个的返回值
      * @param {*} callback (err,result)=>{ }
@@ -146,6 +161,9 @@ class Tapable {
         );
         for (let i = 0; i < plugins.length; i++) {
             plugins[i].apply(this, args);
+            if (remaining < 0) {
+                return;
+            }
         }
     }
 
