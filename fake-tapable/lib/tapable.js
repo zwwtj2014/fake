@@ -2,6 +2,7 @@ class Tapable {
     constructor() {
         this._plugins = {};
         this._currentPluginApply = -1; // 当插件出现多层applyplugin时, 记录上一层的位置, 方便还原现场
+        this.applyPluginsAsyncSeries = this.applyPluginsAsync;
     }
 
     _copyProperties(from, to) {
@@ -41,31 +42,6 @@ class Tapable {
             plugins[this._currentPluginApply].apply(this, args);
         }
         this._currentPluginApply = old;
-    }
-
-    applyPluginsAsyncSeries(name) {
-        let args = Array.prototype.slice.call(arguments, 1);
-        let callback = args.pop();
-        if (!this._plugins[name] || this._plugins[name].length === 0) {
-            return callback();
-        }
-        let plugins = this._plugins[name];
-        let old = this._currentPluginApply;
-        this._currentPluginApply = 0;
-        args.push(
-            this._copyProperties(callback, err => {
-                if (err) {
-                    return callback();
-                }
-                this._currentPluginApply++;
-                if (this._currentPluginApply >= plugins.length) {
-                    this._currentPluginApply = 0;
-                    return callback();
-                }
-                plugins[this._currentPluginApply].apply(this, args);
-            })
-        );
-        plugins[0].apply(this, args);
     }
 
     // 执行插件name的处理函数。返回第一个执行不为undefined的值, 且终止事件流
