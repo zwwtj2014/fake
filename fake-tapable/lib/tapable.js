@@ -41,11 +41,9 @@ class Tapable {
         }
         let args = Array.prototype.slice.call(arguments, 1);
         let plugins = this._plugins[name];
-        let old = this._currentPluginApply;
-        for (this._currentPluginApply = 0; this._currentPluginApply < plugins.length; this._currentPluginApply++) {
-            plugins[this._currentPluginApply].apply(this, args);
+        for (let i = 0; i < plugins.length; i++) {
+            plugins[i].apply(this, args);
         }
-        this._currentPluginApply = old;
     }
 
     // 执行插件name的处理函数。返回第一个执行不为undefined的值, 且终止事件流
@@ -55,16 +53,13 @@ class Tapable {
         }
         let args = Array.prototype.slice.call(arguments, 1);
         let plugins = this._plugins[name];
-        let old = this._currentPluginApply;
-        for (this._currentPluginApply = 0; this._currentPluginApply < plugins.length; this._currentPluginApply++) {
-            const result = plugins[this._currentPluginApply].apply(this, args);
+        for (let i = 0; i < plugins.length; i++) {
+            const result = plugins[i].apply(this, args);
             // 函数的执行结果不为undefined时, 返回且终止事件流
             if (typeof result !== "undefined") {
-                this._currentPluginApply = old;
                 return result;
             }
         }
-        this._currentPluginApply = old;
     }
 
     // 异步的执行插件事件流
@@ -100,12 +95,10 @@ class Tapable {
         }
         let args = Array.prototype.slice(arguments, 2);
         let plugins = this._plugins[name];
-        let old = this._currentPluginApply;
         let current = init;
-        for (this._currentPluginApply = 0; this._currentPluginApply < plugins.length; this._currentPluginApply++) {
-            current = plugins[this._currentPluginApply].apply(this, [current].concat(args));
+        for (let i = 0; i < plugins.length; i++) {
+            current = plugins[i].apply(this, [current].concat(args));
         }
-        this._currentPluginApply = old;
         return current;
     }
 
@@ -199,13 +192,6 @@ class Tapable {
             })(i);
             plugins[i].apply(this, args);
         }
-    }
-
-    restartApplyPlugins() {
-        if (typeof this._currentPluginApply !== "number") {
-            throw new Error("Tapable.prototype.restartApplyPlugins can only be used inside of any sync plugins application");
-        }
-        this._currentPluginApply = -1;
     }
 }
 
