@@ -76,20 +76,18 @@ class Tapable {
         }
 
         let plugins = this._plugins[name];
-        let old = this._currentPluginApply;
-        this._currentPluginApply = 0;
+        let i = 0;
         // 增加一个next方法作为最后一个参数 => 串联事件流
         args.push(
             _copyProperties(callback, err => {
                 if (err) {
                     callback(err);
                 }
-                this._currentPluginApply++;
-                if (this._currentPluginApply >= this._plugins.length) {
-                    this._currentPluginApply = old;
+                i++;
+                if (i >= this._plugins.length) {
                     return callback();
                 }
-                plugins[this._currentPluginApply].apply(this, args);
+                plugins[i].apply(this, args);
             })
         );
         // 从第一个事件开始执行
@@ -120,19 +118,17 @@ class Tapable {
             return callback(null, init);
         }
         let plugins = this._plugins[name];
-        let old = this._currentPluginApply;
-        this._currentPluginApply = 0;
+        let i = 0;
         let next = this._copyProperties(callback, (err, result) => {
             if (err) {
                 callback(err);
             }
-            this._currentPluginApply++;
-            if (this._currentPluginApply >= this._plugins.length) {
-                this._currentPluginApply = old;
+            i++;
+            if (i >= this._plugins.length) {
                 return callback(null, result);
             }
             // 顺序执行插件事件, 且将上一跳的数据传到下一跳作为init值
-            plugins[this._currentPluginApply].call(this, result, next);
+            plugins[i].call(this, result, next);
         });
         plugins[0].call(this, init, next);
     }
@@ -206,6 +202,9 @@ class Tapable {
     }
 
     restartApplyPlugins() {
+        if (typeof this._currentPluginApply !== "number") {
+            throw new Error("Tapable.prototype.restartApplyPlugins can only be used inside of any sync plugins application");
+        }
         this._currentPluginApply = -1;
     }
 }
