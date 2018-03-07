@@ -19,6 +19,10 @@ class Tapable {
 
     // 允许将一个自定义插件注册到 Tapable 实例 的事件中
     plugin(name, fn) {
+        if (Array.isArray(name)) {
+            name.forEach(n => this.plugin(name, fn));
+            return;
+        }
         this._plugins[name] = this._plugins[name] || [];
         this._plugins[name].push(fn);
     }
@@ -94,7 +98,7 @@ class Tapable {
 
     applyPluginsWaterfall(name, init) {
         if (!this._plugins[name]) {
-            return;
+            return init;
         }
         let args = Array.prototype.slice(arguments, 2);
         let plugins = this._plugins[name];
