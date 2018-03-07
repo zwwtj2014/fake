@@ -4,11 +4,16 @@ class Tapable {
         this._currentPluginApply = -1; // 当插件出现多层applyplugin时, 记录上一层的位置, 方便还原现场
     }
 
+    _copyProperties(from, to) {
+        for (let key in from) {
+            to[key] = from[key];
+        }
+        return to;
+    }
+
     // 使用混入而不是继承的方式扩展 Tapable 的原型
     static mixin(pt) {
-        for (const name in Tapable.prototype) {
-            pt[name] = Tapable.prototype[name];
-        }
+        _copyProperties(Tapable.prototype, pt);
     }
 
     // 允许将一个自定义插件注册到 Tapable 实例 的事件中
@@ -47,17 +52,19 @@ class Tapable {
         let plugins = this._plugins[name];
         let old = this._currentPluginApply;
         this._currentPluginApply = 0;
-        args.push(err => {
-            if (err) {
-                return callback();
-            }
-            this._currentPluginApply++;
-            if (this._currentPluginApply >= plugins.length) {
-                this._currentPluginApply = 0;
-                return callback();
-            }
-            plugins[this._currentPluginApply].apply(this, args);
-        });
+        args.push(
+            this._copyProperties(callback, err => {
+                if (err) {
+                    return callback();
+                }
+                this._currentPluginApply++;
+                if (this._currentPluginApply >= plugins.length) {
+                    this._currentPluginApply = 0;
+                    return callback();
+                }
+                plugins[this._currentPluginApply].apply(this, args);
+            })
+        );
         plugins[0].apply(this, args);
     }
 
@@ -92,17 +99,19 @@ class Tapable {
         let old = this._currentPluginApply;
         this._currentPluginApply = 0;
         // 增加一个next方法作为最后一个参数 => 串联事件流
-        args.push(err => {
-            if (err) {
-                callback(err);
-            }
-            this._currentPluginApply++;
-            if (this._currentPluginApply >= this._plugins.length) {
-                this._currentPluginApply = old;
-                return callback();
-            }
-            plugins[this._currentPluginApply].apply(this, args);
-        });
+        args.push(
+            _copyProperties(callback, err => {
+                if (err) {
+                    callback(err);
+                }
+                this._currentPluginApply++;
+                if (this._currentPluginApply >= this._plugins.length) {
+                    this._currentPluginApply = old;
+                    return callback();
+                }
+                plugins[this._currentPluginApply].apply(this, args);
+            })
+        );
         // 从第一个事件开始执行
         plugins[0].apply(this, args);
     }
@@ -118,7 +127,7 @@ class Tapable {
         let plugins = this._plugins[name];
         let old = this._currentPluginApply;
         this._currentPluginApply = 0;
-        let next = (err, result) => {
+        let next = this._copyProperties(callback, (err, result) => {
             if (err) {
                 callback(err);
             }
@@ -129,7 +138,7 @@ class Tapable {
             }
             // 顺序执行插件事件, 且将上一跳的数据传到下一跳作为init值
             plugins[this._currentPluginApply].call(this, result, next);
-        };
+        });
         plugins[0].call(this, init, next);
     }
 
@@ -144,19 +153,21 @@ class Tapable {
         let plugins = this._plugins[name];
         let remaining = plugins.length; // 用于记录当前有多少个需要并行执行的插件, 控制全部执行完的时机
         // 加入一个判断是否执行完的逻辑作为每个插件的callback
-        args.push(err => {
-            if (remaining < 0) {
-                return; //边界值
-            }
-            if (err) {
-                return callback(err);
-            }
-            remaining--;
-            // 都执行完了再执行callback
-            if (remaining == 0) {
-                return callback();
-            }
-        });
+        args.push(
+            this._copyProperties(callback, err => {
+                if (remaining < 0) {
+                    return; //边界值
+                }
+                if (err) {
+                    return callback(err);
+                }
+                remaining--;
+                // 都执行完了再执行callback
+                if (remaining == 0) {
+                    return callback();
+                }
+            })
+        );
         for (let i = 0; i < plugins.length; i++) {
             plugins[i].apply(this, args);
         }
@@ -172,9 +183,10 @@ class Tapable {
         let currentPos = plugins.length;
         let currentError, currentResult;
         let done = [];
+        var self = this;
         for (let i = 0; i < plugins.length; i++) {
             args[args.length - 1] = (function(i) {
-                return function(err, result) {
+                return self._copyProperties(callback, function(err, result) {
                     if (i >= currentPos) return; // ignore
                     done.push(i);
                     if (err || result) {
@@ -189,7 +201,7 @@ class Tapable {
                         callback(currentError, currentResult);
                         currentPos = 0;
                     }
-                };
+                });
             })(i);
             plugins[i].apply(this, args);
         }
