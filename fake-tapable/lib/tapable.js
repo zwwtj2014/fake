@@ -62,6 +62,19 @@ class Tapable {
         }
     }
 
+    applyPluginsBailResult1(name, param) {
+        if (!this._plugins[name]) {
+            return;
+        }
+        let plugins = this._plugins[name];
+        for (let i = 0; i < plugins.length; i++) {
+            let result = plugins[i].call(this, param);
+            if (typeof result !== "undefined") {
+                return result;
+            }
+        }
+    }
+
     // 异步的执行插件事件流
     applyPluginsAsync(name) {
         let args = Array.prototype.slice.call(arguments, 1);
@@ -99,7 +112,7 @@ class Tapable {
         let plugins = this._plugins[name];
         let i = 0;
         args.push(
-            copyProperties(callback, () => {
+            this._copyProperties(callback, () => {
                 if (arguments.length > 0) return callback.apply(null, arguments);
                 i++;
                 if (i >= plugins.length) {
@@ -109,6 +122,23 @@ class Tapable {
             })
         );
         plugins[0].apply(this, args);
+    }
+
+    applyPluginsAsyncSeriesBailResult1(name, param, callback) {
+        if (!this._plugins[name] || this._plugins[name].length === 0) {
+            return callback(); // 未找到处理函数则直接执行cb
+        }
+        let plugins = this._plugins[name];
+        let i = 0;
+        let innerCallback = this._copyProperties(callback, (err, result) => {
+            if (arguments.length > 0) return callback.apply(err, result);
+            i++;
+            if (i >= plugins.length) {
+                return callback();
+            }
+            plugins[i].apply(this, param, innerCallback);
+        });
+        plugins[0].apply(this, param, innerCallback);
     }
 
     applyPluginsWaterfall(name, init) {
@@ -212,6 +242,34 @@ class Tapable {
                 });
             })(i);
             plugins[i].apply(this, args);
+        }
+    }
+
+    applyPluginsParallelBailResult1(name, param, callback) {
+        if (!this._plugins[name] || this._plugins[name].length === 0) return callback();
+        var plugins = this._plugins[name];
+        var currentPos = plugins.length;
+        var currentResult;
+        var done = [];
+        for (var i = 0; i < plugins.length; i++) {
+            var innerCallback = (function(i) {
+                return copyProperties(callback, function() {
+                    if (i >= currentPos) return; // ignore
+                    done.push(i);
+                    if (arguments.length > 0) {
+                        currentPos = i + 1;
+                        done = done.filter(function(item) {
+                            return item <= i;
+                        });
+                        currentResult = Array.prototype.slice.call(arguments);
+                    }
+                    if (done.length === currentPos) {
+                        callback.apply(null, currentResult);
+                        currentPos = 0;
+                    }
+                });
+            })(i);
+            plugins[i].call(this, param, innerCallback);
         }
     }
 }
