@@ -27,6 +27,11 @@ class Tapable {
         this._plugins[name].push(fn);
     }
 
+    hasPlugins(name) {
+        let plugins = this._plugins[name];
+        return plugins && plugins.length > 0;
+    }
+
     // 增加一个运行多个函数的方式
     apply() {
         for (let i = 0; i < arguments.length; i++) {
@@ -99,6 +104,59 @@ class Tapable {
         let plugins = this._plugins[name];
         for (let i = 0; i < plugins.length; i++) {
             let result = plugins[i].call(this, param);
+            if (typeof result !== "undefined") {
+                return result;
+            }
+        }
+    }
+
+    applyPluginsBailResult2(name, param1, param2) {
+        if (!this._plugins[name]) {
+            return;
+        }
+        let plugins = this._plugins[name];
+        for (let i = 0; i < plugins.length; i++) {
+            let result = plugins[i].call(this, param1, param2);
+            if (typeof result !== "undefined") {
+                return result;
+            }
+        }
+    }
+
+    applyPluginsBailResult3(name, param1, param2, param3) {
+        if (!this._plugins[name]) {
+            return;
+        }
+        let plugins = this._plugins[name];
+        for (let i = 0; i < plugins.length; i++) {
+            let result = plugins[i].call(this, param1, param2, param3);
+            if (typeof result !== "undefined") {
+                return result;
+            }
+        }
+    }
+
+
+    applyPluginsBailResult4(name, param1, param2, param3, param4) {
+        if (!this._plugins[name]) {
+            return;
+        }
+        let plugins = this._plugins[name];
+        for (let i = 0; i < plugins.length; i++) {
+            let result = plugins[i].call(this, param1, param2, param3, param4);
+            if (typeof result !== "undefined") {
+                return result;
+            }
+        }
+    }
+
+    applyPluginsBailResult4(name, param1, param2, param3, param4, param5) {
+        if (!this._plugins[name]) {
+            return;
+        }
+        let plugins = this._plugins[name];
+        for (let i = 0; i < plugins.length; i++) {
+            let result = plugins[i].call(this, param1, param2, param3, param4, param5);
             if (typeof result !== "undefined") {
                 return result;
             }
@@ -193,11 +251,12 @@ class Tapable {
         if (!this._plugins[name]) {
             return init;
         }
-        let args = Array.prototype.slice(arguments, 2);
+        let args = Array.prototype.slice(arguments, 1);
         let plugins = this._plugins[name];
         let current = init;
         for (let i = 0; i < plugins.length; i++) {
-            current = plugins[i].apply(this, [current].concat(args));
+            args[0] = current;
+            current = plugins[i].apply(this, args);
         }
         return current;
     }
@@ -284,13 +343,13 @@ class Tapable {
         let done = [];
         var self = this;
         for (let i = 0; i < plugins.length; i++) {
-            args[args.length - 1] = (function(i) {
-                return self._copyProperties(callback, function() {
+            args[args.length - 1] = (function (i) {
+                return self._copyProperties(callback, function () {
                     if (i >= currentPos) return; // ignore
                     done.push(i);
                     if (arguments.length > 0) {
                         currentPos = i + 1;
-                        done = done.filter(function(item) {
+                        done = done.filter(function (item) {
                             return item <= i;
                         });
                         currentResult = Array.prototype.slice.call(arguments);
@@ -314,13 +373,13 @@ class Tapable {
         var currentResult;
         var done = [];
         for (var i = 0; i < plugins.length; i++) {
-            var innerCallback = (function(i) {
-                return copyProperties(callback, function() {
+            var innerCallback = (function (i) {
+                return copyProperties(callback, function () {
                     if (i >= currentPos) return; // ignore
                     done.push(i);
                     if (arguments.length > 0) {
                         currentPos = i + 1;
-                        done = done.filter(function(item) {
+                        done = done.filter(function (item) {
                             return item <= i;
                         });
                         currentResult = Array.prototype.slice.call(arguments);
