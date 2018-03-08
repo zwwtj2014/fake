@@ -273,6 +273,30 @@ class Tapable {
         return current;
     }
 
+    applyPluginsWaterfall1(name, init, param) {
+        let plugins = this._plugins[name];
+        if (!plugins) {
+            return init;
+        }
+        let current = init;
+        for (let i = 0; i < plugins.length; i++) {
+            current = plugins[i].call(this, current, param);
+        }
+        return current;
+    }
+
+    applyPluginsWaterfall1(name, init, param1, param2) {
+        let plugins = this._plugins[name];
+        if (!plugins) {
+            return init;
+        }
+        let current = init;
+        for (let i = 0; i < plugins.length; i++) {
+            current = plugins[i].call(this, current, param1, param2);
+        }
+        return current;
+    }
+
     /**
      * 插件一个一个的执行, 下一个接收上一个的返回值
      * @param {*} callback (err,result)=>{ }
