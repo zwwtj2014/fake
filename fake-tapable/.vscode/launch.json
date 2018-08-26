@@ -7,8 +7,14 @@
         {
             "type": "node",
             "request": "launch",
-            "name": "启动程序",
-            "program": "${workspaceFolder}\\debug\\applyPluginsParallelBailResultTest.js"
+            "name": "HookTest",
+            "program": "${workspaceFolder}\\debug\\HookTest.js"
+        },
+        {
+            "type": "node",
+            "request": "launch",
+            "name": "SyncHookTest",
+            "program": "${workspaceFolder}\\debug\\SyncHookTest.js"
         }
     ]
 }

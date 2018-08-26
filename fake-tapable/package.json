@@ -1,16 +1,15 @@
 {
-  "name": "fake-tapable",
-  "version": "1.0.0",
-  "description": "fake tapable",
-  "main": "lib/tapable.js",
-  "scripts": {
-    "test": "mocha --reporter spec"
-  },
-  "keywords": [],
-  "author": "",
-  "license": "MIT",
-  "devDependencies": {
-    "mocha": "^5.0.1",
-    "should": "^13.2.1"
-  }
+    "name": "fake-tapable",
+    "version": "1.0.0",
+    "description": "fake tapable",
+    "main": "lib/tapable.js",
+    "scripts": {
+        "test": "jest"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "MIT",
+    "devDependencies": {
+        "jest": "^22.4.2"
+    }
 }
