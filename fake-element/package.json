@@ -13,6 +13,7 @@
     "clean": "rimraf lib && rimraf packages/*/lib && rimraf test/**/coverage",
     "dev": "yarn run build:file && cross-env NODE_ENV=development webpack-dev-server --config build/webpack.demo.js & node build/bin/template.js",
     "dist": "npm run clean && npm run build:file && npm run lint && webpack --config build/webpack.component.js",
+    "dist:umd": "npm run clean && npm run lint && webpack --config build/webpack.component.umd.js",
     "lint": "eslint src/**/* packages/**/* build/**/* --quiet"
   },
   "devDependencies": {
@@ -42,6 +43,7 @@
     "url-loader": "^1.1.1",
     "vue": "^2.5.17",
     "vue-loader": "^15.4.0",
+    "vue-template-compiler": "^2.5.17",
     "webpack": "^4.17.1",
     "webpack-cli": "^3.1.0",
     "webpack-dev-server": "^3.1.5",
