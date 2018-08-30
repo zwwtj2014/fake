@@ -19,6 +19,10 @@ module.exports = {
     filename: '[name].[hash:7].js',
     chunkFilename: isProd ? '[name].[hash:7].js' : '[name].js'
   },
+  devtool: 'source-map',
+  externals: {
+    vue: 'Vue'
+  },
   resolve: {
     extensions: ['.js', '.vue', '.json'],
     alias: config.alias,
@@ -26,9 +30,8 @@ module.exports = {
   },
   devServer: {
     host: '0.0.0.0',
-    port: 8085,
-    publicPath: '/',
-    noInfo: true
+    port: 3333,
+    publicPath: '/'
   },
   performance: {
     hints: false
