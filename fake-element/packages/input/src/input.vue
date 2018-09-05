@@ -47,6 +47,7 @@
         :value="currentValue"
         :disabled="inputDisabled"
         :readonly="readonly"
+        :style="textareaStyle"
         @input="handleInput"
         @focus="handleFocus"
       >
@@ -57,6 +58,7 @@
 <script>
 import emitter from 'fake-element-ui/src/mixins/emitter';
 import migrating from 'fake-element-ui/src/mixins/migrating';
+import calcTextareaHeight from './calcTextareaHeight';
 
 export default {
   name: 'ElInput',
@@ -75,6 +77,7 @@ export default {
   data() {
     return {
       currentValue: this.value === undefined || this.value === null ? '' : this.value,
+      textareaCalcStyle: {}, // autosize时, 实时存储textarea的计算结果, {minHeight, height}
       isOnComposition: false, // 表示未处于composition event事件中
       valueBeforeComposition: null,
       focused: false, // 根据 focus 事件
@@ -94,6 +97,10 @@ export default {
       type: Boolean,
       default: false
     },
+    autosize: {
+      type: [Boolean, Object],
+      default: false
+    },
     suffixIcon: String, // 输入框尾部图标
     prefixIcon: String // 输入框头部图标
   },
@@ -106,6 +113,9 @@ export default {
     },
     inputDisabled() {
       return this.disabled || (this.elForm || {}).disabled;
+    },
+    textareaStyle() {
+      return Object.assign({}, this.textareaCalcStyle, {resize: this.resize});
     },
     showClear() {
       return this.clearable &&
@@ -140,6 +150,26 @@ export default {
       if (this.isOnComposition) {
         return;
       }
+      this.$nextTick(this.resizeTextarea);
+    },
+    resizeTextarea() {
+      // 标识当前Vue实例是否运行于服务端, 一般用于SSR
+      if (this.$isServer) {
+        return;
+      }
+
+      const { autosize, type } = this;
+      if (type !== 'textarea') {
+        return;
+      }
+      if (!autosize) {
+        this.textareaCalcStyle = {
+          minHeight: calcTextareaHeight(this.$refs.textarea).minHeight
+        };
+        return;
+      }
+      const { minRows, maxRows } = autosize;
+      this.textareaCalcStyle = calcTextareaHeight(this.$refs.textarea, minRows, maxRows);
     },
     getMigratingConfig() {
       return {
@@ -159,6 +189,10 @@ export default {
       this.setCurrentValue('');
       this.focus();
     }
+  },
+
+  mounted() {
+    this.resizeTextarea();
   }
 };
 </script>

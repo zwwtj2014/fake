@@ -44,6 +44,22 @@
                 v-model="textarea">
             </el-input>
         </div>
+
+        <div style="margin: 20px 0;">
+            可自适应文本高度的文本域:
+            <el-input
+                type="textarea"
+                autosize
+                placeholder="请输入内容"
+                v-model="textarea2">
+            </el-input>
+            <el-input
+                type="textarea"
+                :autosize="{ minRows: 2, maxRows: 4}"
+                placeholder="请输入内容"
+                v-model="textarea3">
+            </el-input>
+        </div>
     </div>
 </template>
 
@@ -58,7 +74,9 @@ export default {
             input21: '',
             input22: '',
             input23: '',
-            textarea: ''
+            textarea: '',
+            textarea2: '',
+            textarea3: ''
         }
     }
 }
