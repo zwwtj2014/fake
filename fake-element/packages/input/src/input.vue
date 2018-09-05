@@ -39,12 +39,16 @@
           </span>
         </span>
       </template>
-      <textarea 
+      <textarea
         v-else
+        class="el-textarea__inner"
+        ref="textarea"
+        v-bind="$attrs"
         :value="currentValue"
         :disabled="inputDisabled"
         :readonly="readonly"
         @input="handleInput"
+        @focus="handleFocus"
       >
       </textarea>
     </div>
@@ -58,6 +62,7 @@ export default {
   name: 'ElInput',
   componentName: 'ElInput',
   mixins: [emitter, migrating],
+  inheritAttrs: false,
   inject: {
     // DI: 在任何后代组件里，我们都可以使用 inject 选项来接收指定的我们想要添加在这个实例上的属性
     elForm: {

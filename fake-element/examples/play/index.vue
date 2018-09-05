@@ -34,6 +34,16 @@
                 <i slot="prefix" class="el-input__icon el-icon-search"></i>
             </el-input>
         </div>
+
+        <div style="margin: 20px 0;">
+            文本域:
+            <el-input
+                type="textarea"
+                :rows="2"
+                placeholder="请输入内容"
+                v-model="textarea">
+            </el-input>
+        </div>
     </div>
 </template>
 
@@ -47,7 +57,8 @@ export default {
             input2: '',
             input21: '',
             input22: '',
-            input23: ''
+            input23: '',
+            textarea: ''
         }
     }
 }
