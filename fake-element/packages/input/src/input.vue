@@ -3,7 +3,8 @@
         type === 'textarea' ? 'el-textarea' : 'el-input',
         inputSize ? `el-input--${inputSize}` : '',
         {
-          'el-input--suffix': clearable
+          'el-input--prefix': $slots.prefix || prefixIcon,
+          'el-input--suffix': $slots.suffix || suffixIcon || clearable
         }
       ]"
       @mouseenter="hovering = true"
@@ -22,11 +23,17 @@
           @input="handleInput"
           @focus="handleFocus"
         >
+        <!-- 前置內容 -->
+        <span class="el-input__prefix" v-if="$slots.prefix || prefixIcon">
+          <slot name="prefix"></slot>
+          <i class="el-input__icon" v-if="prefixIcon" :class="prefixIcon"></i>
+        </span>
         <!-- 后置内容 -->
-        <span class="el-input__suffix" v-if="showClear">
+        <span class="el-input__suffix" v-if="$slots.suffix || suffixIcon || showClear">
           <span class="el-input__suffix-inner">
             <template v-if="!showClear">
               <slot name="suffix"></slot>
+              <i class="el-input__icon" v-if="suffixIcon" :class="suffixIcon"></i>
             </template>
             <i v-else class="el-input__icon el-icon-circle-close el-input__clear" @click="clear"></i>
           </span>
@@ -82,7 +89,8 @@ export default {
       type: Boolean,
       default: false
     },
-    suffixIcon: String // 输入框尾部图标
+    suffixIcon: String, // 输入框尾部图标
+    prefixIcon: String // 输入框头部图标
   },
   computed: {
     _elFormItemSize() {
