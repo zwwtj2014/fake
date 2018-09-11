@@ -1,8 +1,11 @@
 <template>
     <div style="margin: 20px;">
         <div style="margin: 20px 0;">
+            <form action="">
             基础用法：
-            <el-input v-model="input" placeholder="请输入内容"></el-input>
+            <el-input v-model="input" autoComplete="on" placeholder="请输入内容"></el-input>
+            <button type="submit">Submit</button>
+            </form>
         </div>
         <div style="margin: 20px 0;">
             禁用状态：
@@ -60,6 +63,67 @@
                 v-model="textarea3">
             </el-input>
         </div>
+
+        <div style="margin: 20px 0;">
+            复合型输入框:
+            <div>
+                <el-input placeholder="请输入内容" v-model="input3">
+                    <template slot="prepend">Http://</template>
+                </el-input>
+            </div>
+
+            <div style="margin-top: 15px;">
+                <el-input placeholder="请输入内容" v-model="input4">
+                    <template slot="append">.com</template>
+                </el-input>
+            </div>
+
+            <!-- <div style="margin-top: 15px;">
+                <el-input placeholder="请输入内容" v-model="input5" class="input-with-select">
+                    <el-select v-model="select" slot="prepend" placeholder="请选择">
+                    <el-option label="餐厅名" value="1"></el-option>
+                    <el-option label="订单号" value="2"></el-option>
+                    <el-option label="用户电话" value="3"></el-option>
+                    </el-select>
+                    <el-button slot="append" icon="el-icon-search"></el-button>
+                </el-input>
+            </div> -->
+        </div>
+
+        <div style="margin: 20px 0;">
+            尺寸：
+            <div class="demo-input-size">
+                <el-input
+                    tabindex="1"
+                    placeholder="请输入内容"
+                    suffix-icon="el-icon-date"
+                    v-model="input6">
+                </el-input>
+                <el-input
+                    size="medium"
+                    tabindex="3"
+                    placeholder="请输入内容"
+                    suffix-icon="el-icon-date"
+                    v-model="input7">
+                </el-input>
+                <el-input
+                    size="small"
+                    tabindex="2"
+                    placeholder="请输入内容"
+                    suffix-icon="el-icon-date"
+                    v-model="input8">
+                </el-input>
+                <el-input
+                    size="mini"
+                    tabindex="4"
+                    placeholder="请输入内容"
+                    suffix-icon="el-icon-date"
+                    v-model="input9">
+                </el-input>
+            </div>
+        </div>
+
+        <div style="margin: 20px 0;"></div>
     </div>
 </template>
 
@@ -70,15 +134,28 @@ export default {
             input: '基础用法',
             input1: '禁用状态',
             input10: '可清空',
-            input2: '',
+            input2: '123456',
             input21: '',
             input22: '',
             input23: '',
             textarea: '',
             textarea2: '',
-            textarea3: ''
+            textarea3: '',
+            input3: '',
+            input4: '',
+            input5: '',
+            select: '',
+            input6: '',
+            input7: '',
+            input8: '',
+            input9: ''
         }
     }
 }
 </script>
 
+<style scoped>
+.el-select .el-input {
+  width: 130px;
+}
+</style>

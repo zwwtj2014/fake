@@ -12,6 +12,7 @@ const install = function(Vue, opts = {}) {
   });
 
   Vue.prototype.$ELEMENT = {
+    // 全局统一设置元素默认的size和默认zIndex
     size: opts.size || '',
     zIndex: opts.zIndex || 2000
   };
