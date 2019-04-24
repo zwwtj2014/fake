@@ -92,7 +92,7 @@
 import emitter from 'main/mixins/emitter';
 import migrating from 'main/mixins/migrating';
 import calcTextareaHeight from './calcTextareaHeight';
-import { isKorean } from 'element-ui/src/utils/shared';
+import { isKorean } from 'main/utils/shared';
 
 export default {
   name: 'ElInput',
